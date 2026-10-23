@@ -1,0 +1,16 @@
+/tmp/duet-stage-audit/server.py:5: DeprecationWarning: 'cgi' is deprecated and slated for removal in Python 3.13
+  import cgi
+Traceback (most recent call last):
+  File "/tmp/duet-stage-audit/server.py", line 617, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/tmp/duet-stage-audit/server.py", line 603, in main
+    server = ThreadingHTTPServer((args.host, args.port), Handler)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/socketserver.py", line 457, in __init__
+    self.server_bind()
+  File "/usr/lib/python3.12/http/server.py", line 136, in server_bind
+    socketserver.TCPServer.server_bind(self)
+  File "/usr/lib/python3.12/socketserver.py", line 473, in server_bind
+    self.socket.bind(self.server_address)
+OSError: [Errno 98] Address already in use

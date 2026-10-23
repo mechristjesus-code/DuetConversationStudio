@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Duet Conversation Studio</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main>
+    <header><h1>Duet Conversation Studio</h1><p>Offline phone editor · Phase 2 render workflow</p></header>
+    <section class="card">
+      <h2>1. Import a source</h2>
+      <form id="import-form"><input id="video" name="video" type="file" accept="video/*" required><button>Copy and register</button></form>
+      <p id="message" role="status"></p>
+    </section>
+    <section class="card">
+      <h2>2. Compose a split-screen duet</h2>
+      <form id="compose-form">
+        <div class="input-grid">
+          <fieldset><legend>Source A</legend><select id="source-a" required></select><label>Start (ms)<input id="a-start" type="number" min="0" value="0"></label><label>End (ms, optional)<input id="a-end" type="number" min="1" placeholder="source end"></label><label>Audio gain<input id="a-gain" type="number" min="0" max="8" step="0.05" value="1"></label><label><input id="a-mute" type="checkbox"> Mute</label></fieldset>
+          <fieldset><legend>Source B</legend><select id="source-b" required></select><label>Start (ms)<input id="b-start" type="number" min="0" value="0"></label><label>End (ms, optional)<input id="b-end" type="number" min="1" placeholder="source end"></label><label>Audio gain<input id="b-gain" type="number" min="0" max="8" step="0.05" value="1"></label><label><input id="b-mute" type="checkbox"> Mute</label></fieldset>
+        </div>
+        <button type="submit">Create generation</button>
+      </form>
+      <p id="compose-message" role="status"></p>
+    </section>
+    <section class="card"><div class="row"><h2>Sources</h2><button id="refresh">Refresh</button></div><div id="sources"><p>Loading…</p></div></section>
+    <section class="card"><h2>Generations</h2><div id="generations"><p>No generations yet.</p></div></section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

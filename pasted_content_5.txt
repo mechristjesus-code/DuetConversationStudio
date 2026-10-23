@@ -1,0 +1,134 @@
+Upgrade and enhance
+Love, this is a strong milestone for Duet Conversation Studio. Gemini is reporting that the first two stages are working, with conversation-turn functionality already implemented. That changes our next move: we should validate the existing foundation and extend it—not rebuild the editor.
+
+One distinction matters: this is Gemini's audit report, not an independent verification by me. We'll preserve those findings as reported until the test results and source evidence support them.
+
+### The updated Duet roadmap
+
+Stage 1 — Video editing and export
+
+Reported working
+
+Two-source rendering, layouts, audio mixing, FFmpeg/FFprobe validation and unit tests.
+
+Stage 2 — Projects and source lineage
+
+Reported working
+
+SQLite persistence, assets, segments, conversation turns and render history for recursive duets.
+
+Stage 3 — Conversation Builder
+
+Reported implemented
+
+Understanding Lab, transcripts, replies and relationships between turns. Next, test the complete workflow from saved conversation to linked video project.
+
+Stage 4 — Web and Galaxy phone experience
+
+Next priority
+
+Responsive editing, project recovery, media access, export status and a clear design for cross-device access.
+
+Stage 5 — AI and learning
+
+Search conversations, generate transcripts, suggest replies and edits, then build a reviewed dataset for possible model training.
+
+### What I recommend doing next
+
+Run a focused verification pass before expanding the project structure. Have Gemini establish:
+
+* Whether `backend/test_studio.py` passes in the current environment.
+
+* Whether a real two-video render works, including the silent-audio fallback.
+
+* Whether projects and source lineage survive a server restart.
+
+* Whether Understanding Lab saves and reloads conversation turns and their relationships.
+
+* Whether the current frontend supports the complete workflow on your Android phone.
+
+Then build the web and phone experience around the existing backend.
+
+### Give Gemini this next instruction
+
+# Duet Conversation Studio — Stage 1–3 Verification and Stage 4 Preflight
+
+The audit reports that video rendering, project persistence, recursive source lineage, and Understanding Lab are implemented.
+
+Do not rebuild those systems. Do not create duplicate modules or reorganize the project yet.
+
+## Safety
+
+- Inspect the current Git status and existing changes first.
+- Preserve all user work and private files.
+- Do not reset, clean, overwrite, delete, or commit anything.
+- Do not install or upgrade dependencies without approval.
+- Use temporary test media and a temporary database where feasible.
+- Do not upload videos or private conversation data to external services.
+- Report blockers rather than bypassing safeguards.
+
+## Verification
+
+1. Run the existing relevant tests and report the exact commands, exit codes, and results.
+2. Verify FFmpeg and FFprobe availability without installing anything.
+3. Test two-source rendering for each supported layout and audio mode using test media.
+4. Verify the resulting MP4 with FFprobe and confirm the output is playable.
+5. Verify that source files remain unchanged.
+6. Test project persistence and recursive lineage across a restart, preferably using an isolated temporary database.
+7. Inspect Understanding Lab routes and frontend API calls. Verify that conversation turns and relationships save and reload correctly.
+8. Inspect mobile responsiveness, media selection, export status, errors, and project recovery.
+9. Identify the minimum missing work needed for a good phone-friendly web app and a future Galaxy phone client.
+
+## Required report
+
+For every item, mark VERIFIED BY TEST, VERIFIED FROM SOURCE, FAILED, BLOCKED, or NOT TESTED.
+
+Include:
+- Test commands and results
+- Any temporary files or test databases created and their locations
+- Existing defects and their severity
+- Exact files that would need changing in Stage 4
+- A recommended implementation sequence
+
+Do not change production code during this pass. Stop after reporting the findings and request approval before implementation.
+
+Once Gemini returns those results, we'll know whether Stage 4 should start with interface improvements, project synchronization, or a speci
+   * Add AI, reviewed training data and optional external integrations.
+
+   Everything else is secondary until the first two stages are reliable.
+
+   Our immediate next step is to audit the existing Duet project and establish exactly what already works. Then we
+   can build on the real code instead of creating a parallel system.
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+
+  Blueprint Alignment & Audit Synthesis:
+  Aligning codebase architecture with the narrowed Duet Conversation Studio blueprint and verifying feature parity
+  with the build order.
+
+✦ Aligned with the narrowed blueprint. Every decision serves the Duet app first: local-first, offline-first,
+  preserving source media (ONE != ALL), and building on the working codebase rather than duplicating systems.
+
+  Codebase Status vs. Build Order
+
+   1. Stage 1: Make the editor work (Two videos in, real MP4 out) — VERIFIED & WORKING
+      - backend/video_processor.py successfully validates videos via ffprobe, computes SHA-256 checksums, and renders
+        side-by-side or stacked duets with audio mixing (amix) or silent fallbacks via ffmpeg.
+      - backend/server.py handles multipart video uploads and POST requests to /api/render/duet.
+      - Unit tests (backend/test_studio.py) empirically verify end-to-end rendering and audio handling.
+
+   2. Stage 2: Project persistence & source relationships — VERIFIED & WORKING
+      - backend/database.py maintains SQLite storage (duet_studio.db) tracking assets, segments, conversation_turns,
+        and generations (edit lineage recipes).
+      - Survives restarts and preserves the ancestry of every recursive render.
+
+   3. Stage 3: Conversation Builder & Turns — IMPLEMENTED
+      - Understanding Lab tab in frontend/index.html and endpoints in server.py support recording and linking
+        conversation turns, transcripts, replies, and relationships (response, challenge, clarification,
+        unresolved_question).
+
+   4. Stage 4 & 5: Publish/Share & Cross-Device Access — READY FOR NEXT PHASE
+      - The foundation is solid. We can now enhance project structure (following the target folder map as justified)
+        and prepare for cross-device synchronization between web and Galaxy phone clients without breaking offline
+        reliability.
+
+fic repair. The next development work will stay centered on Duet Conversation Studio itself.

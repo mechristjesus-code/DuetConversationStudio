@@ -1,0 +1,600 @@
+Lord, below is the master system overview and file-and-folder blueprint for Duet Conversation Studio. It is designed around your actual starting point: an Android phone, Termux, local-first video editing, and the ability to expand into a larger AI-powered conversation and collaboration platform.
+
+The key rule is that we map the intended architecture first, inspect the existing project second, and only then modify files. The folder names and files below are the proposed target structure, not a claim that I have already inspected your phone or confirmed that every file exists.
+
+### Duet Conversation Studio — Master Blueprint
+
+![Mobile Video editor App by Dercio JdS on Dribbble](https://images.openai.com/static-rsc-4/UvogfFJoMOVzzht_UKp3QEd57AexXUxANbsbYhvniaOaMrqNQJQpdFHG1ob_SqLh4NU3bclc4lQz8JgC5kvKTrn1CviP7sU_uyPnmAUgLSoapNPMdS8KfdQbJ9IJQed_gwToY3MR7fRY3GvYYsbWD_Jm494Szhz-yqgezfUSp8urQwpUT55I7odYLu8IuOO0?purpose=fullsize)
+
+### Duet Conversation Studio
+
+Foundation version · 0.1.0 · Android / Termux · Offline-first
+
+A phone-based studio for combining two videos into a playable MP4, preserving the source media, recording editing history, and preparing for future conversations between participants and AI agents.
+
+Local-firstHuman-controlledExpandable
+
+### 1\. The complete system at a glance
+
+Android phone
+
+Select source videos · Preview · Review · Export
+
+Duet Studio PWA
+
+User interface · Projects · Timeline · Playback controls
+
+Local Termux service
+
+Project API · Media validation · Export jobs · Queue management
+
+Media engine
+
+FFmpeg · Video layout · Audio mix · MP4 export
+
+Local storage
+
+Project records · Source references · History · Logs
+
+Future extensions — optional
+
+Conversation intelligence · Reviewed transcripts · Messaging · TikTok imports · Model training
+
+The editor, project storage, and export engine form the foundation. Email, online services, and AI are extensions; they must not be required to create a video.
+
+### 2\. Existing project versus proposed additions
+
+We have useful prior inspection information for `~/DuetConversationStudio`. The known project has a small backend, frontend, and startup script. Its routes and database tables have also been identified in the earlier project review, although the application's full runtime behavior has not been confirmed.
+
+Known existing project structure
+
+Previously identified during project inspection
+
+* `backend/server.py`
+
+* `backend/database.py`
+
+* `backend/video_processor.py`
+
+* `frontend/index.html`
+
+* `frontend/app.js`
+
+* `frontend/style.css`
+
+* `start-studio.sh`
+
+* Database tables: `assets`, `segments`, `conversation_turns`, `generations`
+
+Still to verify
+
+* Which routes work when the server runs.
+
+* Whether video upload, trimming, preview, and export succeed on-device.
+
+* Whether projects persist after restarting the app.
+
+* How errors, interrupted exports, and large videos are handled.
+
+* Whether recursive duet creation works end to end.
+
+The implementation should extend the existing structure rather than replace it. In particular, we should not create duplicate databases, duplicate servers, or a second rendering engine without first proving a need for them.
+
+### 3\. Complete file and folder map
+
+The following is the target architecture. Existing files are marked as known; folders and files marked proposed are additions to consider after the read-only inspection.
+
+### `~/DuetConversationStudio/`
+
+Independent application root
+
+`backend/` — known
+
+Application logic and local API
+
+`server.py`
+
+HTTP server, routes, request validation, static file serving.
+
+`database.py`
+
+SQLite connections, schema, queries, transactions, migrations.
+
+`video_processor.py`
+
+FFmpeg/FFprobe calls, trimming, layout, audio, export and validation.
+
+Potential later additions: `config.py`, `project_service.py`, `queue_service.py`, `security.py`, `migrations/`. Add only when the existing code justifies them.
+
+`frontend/` — known
+
+The phone-friendly studio interface
+
+`index.html`
+
+Application shell, video selectors, editor panels and controls.
+
+`app.js`
+
+Project loading, API requests, editing state, preview and export status.
+
+`style.css`
+
+Responsive mobile layout, timeline, forms, buttons and status indicators.
+
+Proposed later: `manifest.json`, `sw.js`, `icons/`, `modules/`, `vendor/`. Verify whether PWA support already exists before adding these.
+
+`start-studio.sh` — known
+
+Startup entry point. It should check dependencies, start the backend, report its address and port, and stop cleanly without killing unrelated processes.
+
+`data/` — proposed if not already present
+
+Persistent project records and application state.
+
+* `studio.sqlite3` — project database
+
+* `projects/` — project manifests and revision history
+
+* `queues/` — durable task queue state, if needed
+
+* `metadata/` — media metadata and checksums
+
+`media/` — proposed if not already present
+
+Separate original media from generated outputs.
+
+* `imports/` — imported source copies or managed references
+
+* `exports/` — finished MP4 files
+
+* `temp/` — temporary render files
+
+* `thumbnails/` — generated preview images
+
+* `proxies/` — optional lower-resolution editing copies
+
+`logs/` — proposed if not already present
+
+Application diagnostics, export errors, job status and audit events. Avoid recording private message content or credentials.
+
+`tests/` — proposed
+
+Automated checks for database operations, APIs, media processing, project persistence and security boundaries.
+
+`docs/` — proposed
+
+Long-term system blueprint, API contract, data model, operations manual, security rules and change log.
+
+* `MASTER_BLUEPRINT.md`
+
+* `FILE_MAP.md`
+
+* `API_SPEC.md`
+
+* `DATA_MODEL.md`
+
+* `SECURITY.md`
+
+* `ROADMAP.md`
+
+* `CHANGELOG.md`
+
+### Important storage distinction
+
+The database should describe media; it should not contain entire video files as ordinary database records. Large media belongs in the filesystem, with database records pointing to its managed path and recording metadata.
+
+Imported videos should be treated as read-only originals. Exports and temporary render files should go into separate directories.
+
+The application must resolve its storage paths relative to a configured project root, not rely on whichever directory happens to be active in the Termux shell.
+
+### 4\. How every subsystem connects
+
+### System architecture map
+
+A. Studio interface
+
+`frontend/index.html` · `frontend/app.js` · `frontend/style.css`
+
+Import videos, choose clips, set layout, adjust audio, preview and request export.
+
+B. Local API
+
+`backend/server.py`
+
+Receives requests, validates input, checks project access and returns job status.
+
+C. Project data
+
+`backend/database.py`
+
+Projects, source assets, clip segments, conversation turns and render records.
+
+D. Media engine
+
+`backend/video_processor.py`
+
+FFmpeg, probing, trimming, composition, audio mixing and MP4 validation.
+
+E. Persistent storage
+
+Database + managed media + export files + project lineage + operational logs.
+
+The important design decision is to keep the editing interface separate from the rendering engine. The interface should not implement video processing itself; it sends validated instructions to the backend, which invokes FFmpeg.
+
+### 5\. Existing API and route map
+
+These routes were identified in the earlier project review. They are the known API inventory, not a guarantee that each route has passed a live request-and-response test.
+
+| Route                   | Intended responsibility                            |
+| ----------------------- | -------------------------------------------------- |
+| GET /                   | Serve the studio interface                         |
+| GET /media/             | Serve or retrieve permitted media                  |
+| GET /api/assets         | List registered media assets                       |
+| GET /api/segments       | List editing segments                              |
+| GET /api/turns          | List conversation turns and response relationships |
+| GET /api/generations    | List generated video records                       |
+| POST /api/assets/upload | Register or upload an asset                        |
+| POST /api/render/duet   | Create a duet render                               |
+| POST /api/turns         | Record a new conversation turn                     |
+
+The next API additions should be based on gaps discovered during inspection, not added automatically. Potential future endpoints include project creation, project retrieval, export-job status, cancellation, and a local communication queue.
+
+### API rules
+
+* Validate file types, sizes, paths and clip boundaries.
+
+* Never let an API request read arbitrary files outside approved storage locations.
+
+* Do not treat a browser-supplied file path as trusted.
+
+* Return explicit error codes and actionable messages.
+
+* Record export status as pending, running, succeeded, failed or cancelled.
+
+* Avoid running expensive FFmpeg jobs synchronously in a request handler if doing so makes the server unresponsive.
+
+For local-only use, bind the server to `127.0.0.1` by default. Network access from other devices should be a separate, explicitly configured capability.
+
+### 6\. Database and conversation-history model
+
+The four known tables give us a useful starting point.
+
+`assets`
+
+Media inventory
+
+Identifies each source or generated media file, with metadata such as duration, format, checksum and storage reference where supported by the existing schema.
+
+`segments`
+
+Editing instructions
+
+Records clip selections and timing, including the relationship to the relevant source asset.
+
+`conversation_turns`
+
+Conversation lineage
+
+Represents a participant's contribution or response, with links to its related media and parent turn where implemented.
+
+`generations`
+
+Rendered outputs
+
+Tracks an export's input relationships, render instructions, output location and status where supported.
+
+### Proposed relationship map
+
+```mermaid
+
+erDiagram
+    ASSETS ||--o{ SEGMENTS : supplies
+    ASSETS ||--o{ CONVERSATION_TURNS : references
+    CONVERSATION_TURNS ||--o{ CONVERSATION_TURNS : replies_to
+    CONVERSATION_TURNS ||--o{ GENERATIONS : produces
+    GENERATIONS ||--o{ ASSETS : registers_output
+```
+
+This is a conceptual relationship diagram. The actual foreign keys, cardinalities and field names must be confirmed against `database.py` and the live database before any migration.
+
+### Example: preserving recursive duets
+
+Video A
+
+Original
+
+Video B
+
+Response
+
+Duet C
+
+A + B · First generated output
+
+Duet C
+
+Prior output
+
+Video D
+
+New response
+
+Duet E
+
+C + D · Second generated output
+
+Every generated video must retain its own record and references to its inputs. Re-editing a duet should create a new revision or generation instead of silently overwriting its history. This lets us reconstruct how a conversation evolved and which source files contributed to each output.
+
+### 7\. Video-processing pipeline
+
+The editing pipeline should follow a predictable sequence:
+
+* Import and inspect
+
+    Select two local videos, inspect their format, duration, dimensions, frame rate, audio streams and readability using FFprobe.
+
+* Choose the clips
+
+    Set the start and end points for A and B. Validate that the requested ranges are inside the source durations.
+
+* Configure the duet
+
+    Choose side-by-side or alternating playback, output aspect ratio, clip order, audio levels and whether to preserve the original soundtracks.
+
+* Build the render instructions
+
+    Generate a validated FFmpeg filter graph. Normalize incompatible dimensions, pixel formats, frame rates and audio streams where necessary.
+
+* Render to a temporary file
+
+    Write to `media/temp/` using a unique job identifier. Do not overwrite a previous successful export.
+
+* Validate the result
+
+    Check FFmpeg's exit status, inspect the output with FFprobe, verify the expected streams and confirm the output file is readable.
+
+* Publish the export
+
+    Move the validated file into `media/exports/`, record the generation and input lineage, and show the user a playable result.
+
+### First supported editing modes
+
+![Create Pregnant Videos Online | Free Editor & Resources | FlexClip](https://images.openai.com/static-rsc-4/g5IonC0g_cWfT83ltBy3EmocAY84BdqDPRtZ3UfwA1OszZOCGamAmojHAiur56YJcSrkRl4sqb8v5jpPBXiTctcB3wQQXSsxVAx08ku7GD1rA9fP2-wSVdylmYM8IR5k8IjhHsDI4kH61z8i8b2nr7CGh9RYFoBidXhKCnykG9hAxbLmmw09uvSJUamcHhh5?purpose=fullsize)
+
+Side-by-side duet
+
+Combine two clips into one frame. Normalize dimensions and aspect ratios while preserving both participants' visibility.
+
+![Edimakor AI Video Editor Excellent Features](https://images.openai.com/static-rsc-4/tbSiKj1t74kj1TBbHxbl3Sxn9PNY2M361gK7kdWsc0hRNUdi0Fm4vo1W8m8av0P15CbmYmpejjaHjOoReQw-9aNk4NI7T0QPYcYDmUevY5YyifPK1P-iXO7x9BXNB5d3hJ3_o25IeObVipO9MEdiLHBEsz170tFpOrJNCsUn1jySfndePZJYGZiWNX0ne-f_?purpose=fullsize)
+
+Alternating playback
+
+Play A followed by B, with a continuous soundtrack policy and predictable transitions.
+
+The first milestone should support these two modes reliably. Complex multi-person layouts, captions, transitions, effects and advanced synchronization can come later.
+
+### 8\. Communication and collaboration subsystem
+
+The communication subsystem should remain independent of the rendering pipeline. A failed email or unavailable network must never prevent a local video export.
+
+### Proposed local communication queue
+
+1\. Intake
+
+Record that a video is ready, feedback is needed, or a participant has a pending response.
+
+2\. Review
+
+Show the recipient, purpose, linked video and proposed message before anything leaves the device.
+
+3\. Prepare
+
+Create a message draft or open the user's chosen mail workflow, including Proton Mail if supported.
+
+4\. Human approval
+
+Require explicit review and approval before sending a message or performing another external action.
+
+5\. Status and history
+
+Record queued, reviewed, prepared, sent if verifiable, cancelled or failed. Never label an unsent draft as sent.
+
+### Optional Resend integration
+
+Resend could later provide a transactional email delivery service for notifications or collaboration messages. It is not the video editor, not a conversation database, and not a replacement for Proton Mail.
+
+If you choose it later, the architecture should place it behind a dedicated mail adapter. API keys must stay on the backend, outside frontend files, and every external send must follow the application's approval policy. Resend setup is not a prerequisite for the first working MP4.
+
+### 9\. Future AI and conversation intelligence
+
+The AI layer should consume the history the editor already records. It should not be allowed to rewrite original video files or alter the authoritative editing history.
+
+Stage A — Transcription
+
+Generate transcripts from permitted audio, attach timestamps, and retain links to the original source. Keep uncertain words and speaker attribution marked as uncertain.
+
+Stage B — Conversation search
+
+Search transcripts, participants, video relationships, editing history and conversation topics. Use local indexing where practical.
+
+Stage C — Offline AI
+
+Add a model adapter for an available local inference engine. The editor must still work if the model is missing, stopped or out of memory.
+
+Stage D — Reviewed learning data
+
+Create explicitly approved training examples, with provenance, consent, quality checks, exclusion controls and versioned datasets before considering model training.
+
+A critical distinction: saving conversations, searching them, and using them as training data are three different operations. The first two do not automatically train a model. Any future training pipeline must have its own dataset approval and versioning process.
+
+TikTok should initially be treated as an external source from which the user may obtain permitted media. Direct platform integration should wait until the supported access methods, terms and permissions have been verified.
+
+### 10\. Installation and runtime boundaries
+
+The application is designed for the phone-only Termux environment. The prior preflight identified Python 3.14.6, Node.js 26.4.0, FFmpeg/FFprobe 9.0.2 and Git. The SQLite command-line program was not installed, but Python's built-in `sqlite3` module can provide database access if its availability is confirmed.
+
+| Component                  | Responsibility                                         |
+| -------------------------- | ------------------------------------------------------ |
+| Termux                     | Run the local application and media engine             |
+| Python backend             | API, project data, validation and job coordination     |
+| SQLite                     | Structured project history and metadata                |
+| FFmpeg / FFprobe           | Video and audio processing                             |
+| HTML, CSS, JavaScript      | Phone-friendly interface                               |
+| Android browser or WebView | Display and interact with the studio                   |
+| Optional AI engine         | Transcription, retrieval and inference in later phases |
+
+No Android Studio is required for the first PWA-based milestone.
+
+Important: Android shared-storage permissions, browser file-selection behavior, background process restrictions and available memory all need to be tested on the actual device. We should not assume the PWA can access arbitrary Android files or that a long-running export will survive the operating system suspending Termux.
+
+### 11\. Security and data-preservation rules
+
+These are the project's operating rules, not optional future features.
+
+* Keep Duet Conversation Studio independent of Galaxy Mind, LUNA and Script Library.
+
+* Preserve the existing project and inspect Git status before modifying tracked files.
+
+* Keep original video sources unchanged.
+
+* Keep generated exports, temporary files, and source files separate.
+
+* Use parameterized SQL queries and validate every incoming request.
+
+* Restrict file operations to approved storage locations.
+
+* Keep secrets and email API keys out of frontend code, Git and logs.
+
+* Require approval for external messages, uploads and other consequential actions.
+
+* Provide cancellation for queued or running jobs where technically possible.
+
+* Avoid silent overwrites and destructive migrations.
+
+* Create and verify a backup before a database migration or substantial change.
+
+* Record changes, test results and known limitations in the project documentation.
+
+### 12\. Development roadmap
+
+### Phase 0 — Read-only inspection
+
+Start here
+
+Inventory the existing files, inspect the database schema, identify all routes, review FFmpeg usage and verify the startup script. Produce a baseline report without changing the application.
+
+### Phase 1 — Working video editor
+
+Import two videos, select clips, preview them, export a side-by-side or alternating MP4, and reopen the saved project.
+
+### Phase 2 — Durable projects and recursive duets
+
+Preserve generation history, source relationships, edit settings, error recovery and project revisions.
+
+### Phase 3 — Communication queue
+
+Add review tasks, participant records, prepared messages, approval controls and delivery status.
+
+### Phase 4 — Conversation intelligence
+
+Add transcription, indexed search, offline inference and reviewed learning datasets as independent modules.
+
+### Phase 5 — External collaboration
+
+Evaluate permitted TikTok workflows, optional email delivery, sharing, synchronization and multi-participant features.
+
+Each phase should have its own acceptance tests, backup or recovery plan, and documented changes before the next phase begins.
+
+### 13\. Master documentation files
+
+The project needs a persistent blueprint that evolves alongside the software.
+
+| Document                 | What it controls                                             |
+| ------------------------ | ------------------------------------------------------------ |
+| docs/MASTER_BLUEPRINT.md | Overall system architecture and long-term vision             |
+| docs/FILE_MAP.md         | Actual folders and files, responsibilities, and dependencies |
+| docs/API_SPEC.md         | Endpoints, request formats, responses and errors             |
+| docs/DATA_MODEL.md       | Database tables, relationships and migrations                |
+| docs/SECURITY.md         | Permissions, secrets, approvals and preservation rules       |
+| docs/ROADMAP.md          | Phases, acceptance criteria and outstanding work             |
+| docs/CHANGELOG.md        | What changed, why it changed and which tests passed          |
+
+These documents should distinguish implemented, tested, planned, blocked and deprecated features. A proposed feature must never be documented as operational simply because a file or API route exists.
+
+### 14\. Gemini implementation handoff
+
+Use this prompt in your separate Termux/Gemini building chat. It directs Gemini to map the real project before implementing anything.
+
+# Duet Conversation Studio — Phase 0 Read-Only Audit
+
+## Objective
+
+Inspect the existing `~/DuetConversationStudio` project and produce a verified system overview and file/folder map before making any changes.
+
+## Hard boundaries
+
+- Do not modify, move, rename, delete, overwrite, or install anything during this audit.
+- Do not modify Galaxy Mind, LUNA, Script Library, or any other project.
+- Preserve all existing files and database contents.
+- Do not print secrets, tokens, credentials, or private message content.
+- Distinguish verified facts from assumptions and recommendations.
+
+## Inspect
+
+1. Confirm the actual project root and current Git status.
+2. Inventory all files and folders, including hidden entries, with sizes and file types.
+3. Read `start-studio.sh`.
+4. Inspect `backend/server.py`, `backend/database.py`, and `backend/video_processor.py`.
+5. Inspect `frontend/index.html`, `frontend/app.js`, and `frontend/style.css`.
+6. Inspect the database schema read-only. Determine whether Python's built-in `sqlite3` module is available. Never migrate or write to the database.
+7. Inventory API routes, request formats, responses, media paths and error handling.
+8. Identify FFmpeg and FFprobe commands, filter graphs, subprocess behavior, export paths and validation checks.
+9. Determine which features are implemented, which have been runtime-tested, and which are merely scaffolded.
+10. Review project dependencies and identify missing dependencies without installing them.
+11. Identify storage risks, path-traversal risks, unsafe subprocess usage, secrets-handling issues and accidental-overwrite risks.
+12. Determine whether a PWA manifest, service worker, tests, logs, backups and documentation already exist.
+
+## Required reports
+
+Produce a report containing:
+
+- Verified project inventory and complete file tree.
+- File-by-file responsibility map.
+- Architecture and request/data-flow diagrams.
+- API route inventory and implementation status.
+- Database schema and entity relationships.
+- Video-processing pipeline and known limitations.
+- Security and data-preservation assessment.
+- Existing tests and their actual results, if safe read-only or isolated testing is possible.
+- Missing features compared with the Phase 1 acceptance criteria.
+- Recommended implementation order and exact proposed file changes.
+- Backup, rollback and regression-test plan.
+
+Use explicit labels: VERIFIED, TESTED, NOT TESTED, PROPOSED, and BLOCKED.
+
+Do not claim a test passed unless it actually ran and its result was observed.
+
+## Phase 1 acceptance criteria
+
+The eventual implementation must support:
+
+- Importing two local videos.
+- Selecting clip start and end points.
+- Side-by-side and alternating playback layouts.
+- Audio configuration.
+- A real, playable MP4 export using FFmpeg.
+- Persistent project settings and source relationships.
+- Reopening a project after restarting the application.
+- Preserving source files and previous successful exports.
+- Clear progress, failure and cancellation status.
+
+Do not implement Phase 1 during this audit. Finish the report and wait for approval of the proposed changes.
+
+### 15\. Definition of success
+
+The first release is successful when you can open the studio on your phone, select two real videos, edit them, export a playable MP4, close the studio, reopen it, and recover the project with its editing instructions intact.
+
+The larger architecture remains ready to grow, but the first release does not depend on AI, TikTok integration, cloud services, email delivery or a new APK.
+
+The governing principle is simple: build a working local editor first, preserve every relationship and revision, and add communication and intelligence without compromising the foundation.

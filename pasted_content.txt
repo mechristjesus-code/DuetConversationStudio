@@ -1,0 +1,144 @@
+# Phase 2 — Working Editor (render a real duet)
+
+**Goal:** import two videos, trim, split-screen compose, mix audio, preview, and **render a real playable file**. Lineage is saved but recursive duets come in Phase 4.
+
+### What gets added
+
+- **Server endpoints:** `POST /api/generations` (save recipe + input_refs), `POST /api/generations/{id}/render` (run FFmpeg), `GET /api/generations/{id}/render/status`.
+- **UI:** a compose screen — pick two sources, trim handles per source, split-screen preview, per-source gain + mute, sync offsets, render button.
+- **FFmpeg pipeline:** trim each input → scale to half-width → stack side-by-side (`hstack`) → mix audio (`amix`) → encode MP4 (H.264/AAC) → write to `projects/renders/`.
+
+### Composition flow
+
+1. Select Source A and Source B.
+2. Set trim start/end on each (stored in `input_refs`, not as new files).
+3. Set sync offsets + audio levels.
+4. Preview (browser plays both trimmed clips side-by-side).
+5. Press render → FFmpeg runs → output MP4 written → `generations.render_status = ok`, `render_path` set.
+
+### Gate to Phase 3
+
+- A playable `duet_001.mp4` exists on disk.
+- The generation row, its recipe, and its two input_refs are all in SQLite.
+- Reopening the project shows the generation with its parents and recipe intact.
+
+### NOT in Phase 2
+
+Recursive duets (using a generation as a source), missing-source detection, Drive backup, AI.
+
+---
+
+# Phase 3 — Persistent History + Auto-Backup
+
+**Goal:** the project survives restarts reliably, detects missing/changed sources, and exports automatically back up to Google Drive.
+
+### What gets added
+
+- **Missing-source detection:** on app start, re-hash every source file; mark `sources.status` = `ok` / `missing` / `changed`.
+- **Generation list + lineage view:** dashboard lists generations; clicking one shows its parents, recipe, and (in Phase 4) children.
+- **Reopen a generation:** load its recipe + inputs back into the editor, editable.
+- **Auto-backup (Amendment A1):**
+  - New `backups` table.
+  - On `render_status = ok` → enqueue backup job.
+  - Upload `duet_NNN.mp4` + `duet_NNN.lineage.json` (recipe + input_refs + parent IDs + hashes) to Drive folder `DuetConversationStudio/exports/`.
+  - `backups.status` = synced / failed; failures don't delete the local render; retry is manual.
+  - Opt-in, set once in settings; each sync logged to `logs/audit.log` (number + status, no file contents).
+
+### Gate to Phase 4
+
+- Close and reopen; all sources and generations reappear with correct statuses.
+- A renamed or deleted source shows as `missing` / `changed`, not silently broken.
+- A completed render produces a Drive entry (MP4 + lineage JSON) within the configured folder.
+- A failed Drive sync leaves the local render intact and visible.
+
+---
+
+# Phase 4 — Recursive Duets (the core loop)
+
+**Goal:** use a finished duet as a source for the next conversation, with lineage intact across restarts. This is the test the whole app is built around.
+
+### What gets added
+
+- **Generations as sources:** the compose screen can pick a Generation (not just a Source) as an input; `input_refs.ref_kind = generation`.
+- **Segmenting a generation:** trim handles work on a generation's rendered output, same as on a source.
+- **Lineage queries:** `GET /api/lineage/{id}` returns the full provenance tree (parents → grandparents → original sources) and the descendants tree (what was built from this).
+- **Restore-from-backup re-link:** importing a `duet_NNN.lineage.json` from Drive re-creates the generation and its input_refs without duplicating existing sources.
+
+### The acceptance test (the whole app in one flow)
+
+1. Import Source A and Source B (originals untouched).
+2. Trim + split-screen → render **Duet C** (lineage: from A + B).
+3. Backups: C's MP4 + lineage JSON land in Drive.
+4. Slice a segment of C, add a new response Source E → render **Duet D** (lineage: from C[segment] + E, which transitively traces to A + B).
+5. Close the app, reopen it.
+6. D's lineage tree still shows C → A + B, with hashes intact.
+7. Rename A's file on disk → on reopen, A shows `changed`; D shows a `source_changed` warning but is not silently broken.
+8. Confirm Galaxy Mind / LUNA / Nexus / Sunny / Atom / Eve / Adam were not touched.
+
+### Gate to Phase 5
+
+- The A→B→C→D flow works end-to-end and survives restart.
+- Lineage trees render in both directions.
+- Restore-from-backup re-links without duplicate sources.
+
+---
+
+# Phase 5 — Conversation Intelligence (online, approval-gated)
+
+**Goal:** understand what was said in a generation — transcripts, speakers, topics, Q/A — with explicit per-action approval and a clear label between observed content and AI conclusions.
+
+### What gets added
+
+- **`analyses`**** table:** generation_id, transcript, speaker_turns (JSON), topics (JSON), summary, status, created_at.
+- **Actions (each a deliberate button press):**
+  - **Transcribe** — extract render audio → send to Whisper → store transcript.
+  - **Map speakers + topics** — InvokeLLM with a structured schema over the transcript.
+  - **Find Q/A** — map questions to responses across speakers.
+- **UI labels:** transcript = observed; topics/summary = AI conclusion, clearly separated.
+- **Approval:** each action confirms before any network call; nothing runs automatically.
+
+### Gate to Phase 6
+
+- One generation has a full analysis (transcript + speakers + topics + Q/A).
+- Observed vs. AI-concluded content is visually distinct.
+
+---
+
+# Phase 6 — Knowledge & Training Prep
+
+**Goal:** a reviewed, searchable library; dataset export. No model training here.
+
+### What gets added
+
+- **`library_items`**** table:** generation_id, analysis_id, approved (bool), tags, notes, created_at.
+- **Approval queue:** a generation must be marked approved to enter the library.
+- **Search:** filter by tag, topic, speaker, generation number, source.
+- **Dataset export:** approved items export as JSON/CSV (transcript + lineage + attribution).
+- **Attribution:** source names + hashes travel with every exported record.
+
+### Gate to Phase 7
+
+- An approved, searchable library exists.
+- A dataset export contains lineage + attribution, not just transcripts.
+
+---
+
+# Phase 7 — External Integrations (limits respected)
+
+**Goal:** import from sanctioned Android sources without breaking lineage.
+
+### What gets added
+
+- **Android share target:** share a video into the app → runs the standard Phase 1 import flow.
+- **Sanctioned imports:** only via system share / file picker — no platform scraping.
+- **Every imported file still gets copied, hashed, and registered as a Source** before it can enter a composition.
+
+### Final acceptance
+
+- All of Phase 4's acceptance test still passes.
+- A shared video imports cleanly and can become part of a duet with full lineage.
+- Galaxy Mind / LUNA / Nexus / Sunny / Atom / Eve / Adam confirmed untouched throughout.
+
+---
+
+That's the full set: Phases 0–7 plus Amendment A1 (Drive backup). Each is a copy-pasteable brief for the other chat to build from. Want me to compile the complete blueprint + all phases into a single spec document next?

@@ -1,0 +1,210 @@
+Lord, yes. That changes how we should design the entire system. Duet Conversation Studio should not be designed as just a video editor. It should be designed as one shared capability with multiple ways to access it: a web app, a phone app inside the Galaxy ecosystem, and a local Termux engine.
+
+That means the work you do in one interface should eventually be usable by the others without building three separate systems or duplicating your videos, projects, conversations, and AI memory.
+
+The important distinction is that we're building a connected architecture, not simply linking three applications together.
+
+### Duet Conversation Studio + Galaxy Mind
+
+### 1\. The three access points, one shared foundation
+
+Web app
+
+Browser-based studio, accessible from supported devices
+
+Galaxy phone app
+
+Mobile controls, media selection, notifications and approvals
+
+Shared application interface
+
+Authentication · Project APIs · Job status · Media references · Permissions
+
+Duet Studio core engine
+
+Projects · FFmpeg rendering · Conversation history · Local database · Task queue
+
+Galaxy Mind / LUNA integration layer
+
+AI coordination · Knowledge retrieval · Approved actions · Future collaboration services
+
+The web app and phone app are two interfaces to the system. They should not independently implement their own video-rendering logic, conversation database or learning pipeline.
+
+One qualification: the existing Termux installation can be the first local engine, but it is not automatically an always-available remote server. If the web app must work when your phone is asleep or offline, we'll eventually need a separate reachable service or an explicit synchronization design.
+
+### 2\. The in-and-out pathways: how everything connects
+
+This is the part that will make the system valuable. Every component should be able to exchange the right information with the others, under defined permissions.
+
+A. Media goes in
+
+Android files · Browser uploads · Permitted TikTok imports · Received participant videos
+
+Every import receives an asset ID, source reference, metadata and permission/provenance record. Original media remains untouched.
+
+B. Editing instructions go in
+
+Clip boundaries · Layout · Audio settings · Captions · Export format
+
+These become a versioned project specification. The shared engine renders the video rather than making each app render independently.
+
+C. Conversation information flows through
+
+Participant responses · Transcripts · Notes · Feedback · Conversation links
+
+The system connects each response to the correct video, project and prior conversation turn.
+
+D. AI receives approved context
+
+Relevant transcripts · Project metadata · Search results · User-approved knowledge
+
+LUNA or another authorized AI component can retrieve context and suggest edits, summaries or responses. Suggestions are separate from committed project changes.
+
+E. Outputs go back out
+
+MP4 exports · Shareable links · Message drafts · Reports · Approved AI results
+
+Outputs return to the studio and can be made available to the web or phone interface according to the user's permissions.
+
+### A concrete example
+
+Imagine you import Video A on your phone.
+
+* The phone creates or opens a Duet Studio project.
+
+* The shared project records Video A and its metadata.
+
+* You open the same project in the web app, if it has been synchronized or is available through the same service.
+
+* You add Video B, arrange the duet and submit a render job.
+
+* The engine generates the MP4 and records its lineage.
+
+* LUNA can retrieve the approved conversation history and help prepare a response.
+
+* The phone app displays the new export and any pending review.
+
+* You approve the next action before a message is sent or the result is shared externally.
+
+That is the complete in-and-out loop. The exact same project IDs, asset IDs and revision history must be used across the interfaces.
+
+### 3\. The Galaxy phone app is more than another editor
+
+I would design the Galaxy phone app as the personal control center, while the web app provides a larger workspace for editing, reviewing, organizing and managing projects.
+
+![ワンプロンプト UIデザイン生成 — GPT-image-2 UI・モックアッププロンプト](https://images.openai.com/static-rsc-4/qwQPcTQJPiIgBLO5uaIdjtenzlUp_XFKV9n9YdjWDYu9S_AvIrEgM5v7qCHWAe2dovZpE_2CDUTJ97mgXH1vyoH2fOWA4XA-JXB7sYWA7W9bOfhSwhCcKtY47cYBhipMS-I0LDbcIw9lwtXf1IjIWn2W_iEpZkvSChqZh1Q8xLrG37hCJl4c1s49tRlbMSDf?purpose=fullsize)
+
+Studio
+
+Create projects, select media, review exports and resume unfinished work.
+
+![Arraxistant - Virtual Assistant App by Nija Design for Nija Works on Dribbble](https://images.openai.com/static-rsc-4/iYxXuV9qJLnA_8UQyxU39maU6bnwb1U_DaKnFOaoQ9jK_zpQmp_vcTEaqFew0uJWKqArDekiWtgHBoOLCqARmlIk5oBJ11TWArbieD8LJcnGsVR-b90E6jXWPWGS6rTOKSVqpTDHLFMllt-X4M0PaJAFXbLgzrWLgrTZh067Mt3XCm3cDek0P6VkWw4Zc13A?purpose=fullsize)
+
+Conversation hub
+
+View incoming responses, transcripts, participant activity and pending messages.
+
+![AI Agents Dashboard — Mobile App UI by Nodus Labs for Nodus Labs - Product on Dribbble](https://images.openai.com/static-rsc-4/BZ4sjNw2_4NlxEyi1mna4JzwByyjcHcxb5RU-rKgNAaJSNN-LWLxzjMgMHpKiaNT6c6znHTYKf3VVhlzoOS8x_GoDbYIQHmcvosw1evL7qIjepei2axuvfDNVPUROg0g8G2yMvnrlowcBOYF-iA9z0bSFASIGHuUroc18Bj1uOJ47G85U_yJEG_kD8ob_m9U?purpose=fullsize)
+
+Galaxy Mind control
+
+Request approved AI assistance, inspect job status, pause supported tasks and review proposed actions.
+
+The phone app should have clear controls to pause, cancel, approve and reject operations. It should also indicate whether a task is running locally on the phone, on a reachable service, or waiting for a connection.
+
+That prevents a misleading experience in which an app appears to be processing something when the engine is actually offline.
+
+### 4\. The shared system needs one source of truth
+
+The biggest architectural mistake would be allowing the web app, phone app and LUNA to maintain conflicting copies of the same project.
+
+Instead, separate the system into four kinds of data:
+
+| Data category                                 | Authoritative owner                              |
+| --------------------------------------------- | ------------------------------------------------ |
+| Project settings, revisions and relationships | Duet Studio project database                     |
+| Original media and rendered videos            | Approved media storage                           |
+| AI memory and agent state                     | Galaxy Mind / LUNA's existing authorized storage |
+| External actions and approval history         | Shared action and audit records                  |
+
+AI can read permitted project information, propose edits and prepare outputs. It should not silently overwrite the authoritative project history or treat a suggestion as an approved action.
+
+For the web and phone apps to share data, we need an explicit synchronization layer. It should track project revisions, pending uploads, conflicting edits, interrupted transfers and which media files are actually available on each device.
+
+### 5\. Updated file architecture
+
+This is the proposed expansion of the earlier file map. These are planned integration boundaries, not files that have already been created.
+
+`~/DuetConversationStudio/`
+
+Existing application, extended incrementally
+
+`frontend/`
+
+Web application and shared presentation logic
+
+`index.html` · `app.js` · `style.css`
+
+`backend/`
+
+Shared application API and business rules
+
+`server.py` · `database.py` · `video_processor.py`
+
+Proposed modules, after inspection:
+
+`project_service.py` · `media_service.py` · `job_service.py` · `auth.py`
+
+`integrations/` — proposed
+
+Adapters that connect other systems without entangling the video engine
+
+`galaxy_mind_adapter.py` · `luna_adapter.py` · `mail_adapter.py` · `media_import_adapter.py`
+
+`sync/` — proposed
+
+Project revisions, synchronization status, conflict detection and transfer manifests
+
+`sync_service.py` · `sync_manifest.py`
+
+`data/` and `media/`
+
+Local database, projects, original media, exports, job state and temporary files.
+
+`docs/`
+
+`MASTER_BLUEPRINT.md` · `FILE_MAP.md` · `API_SPEC.md` · `INTEGRATIONS.md` · `SYNC_DESIGN.md` · `SECURITY.md` · `ROADMAP.md`
+
+The separate Galaxy phone app should live in its own project directory, rather than being mixed into the editor's backend. The deployment choice—PWA, Android WebView wrapper, or a dedicated Android client—can be made after inspecting the existing Galaxy app architecture. The interfaces should communicate through a documented API, not by sharing application source files or directly manipulating each other's databases.
+
+### 6\. How the system expands without breaking what already works
+
+First: establish the working core
+
+Make the existing Termux studio reliable. Add stable project and asset IDs, export tracking and tests.
+
+Second: establish the shared API
+
+Define project, media, rendering and status operations independently of the interface.
+
+Third: connect the web and phone apps
+
+Reuse the same project model and API. Add synchronization only where the deployment actually requires it.
+
+Fourth: connect Galaxy Mind and LUNA
+
+Introduce a narrow, permission-controlled adapter. Do not merge their existing memory, agent state or execution systems into Duet Studio.
+
+Fifth: add intelligence and external services
+
+Introduce transcripts, search, approved AI suggestions, messaging and additional media sources as independent extensions.
+
+### 7\. The key decision for the master blueprint
+
+I recommend making this a formal architectural rule:
+
+Duet Conversation Studio is a shared media-and-conversation service with multiple clients. Galaxy Mind is the wider coordination ecosystem. LUNA is an authorized intelligence and memory participant—not a replacement for the studio's project database or media engine.
+
+That gives us the in-and-out connections you are describing while preserving independent applications, clear ownership and controlled access.
+
+One remaining deployment decision will determine how we implement the connection: should the web app and Galaxy phone app initially share projects through a service running on your phone when it is available, or should they ultimately connect through a separately hosted service that remains available when your phone is offline? We can build the local foundation to support either approach without committing to cloud hosting today.
