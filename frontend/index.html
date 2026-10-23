@@ -54,6 +54,12 @@
                 <div id="assets-list">Loading assets...</div>
             </div>
 
+            <div class="card">
+                <h3>System Snapshot & Backup</h3>
+                <p>Export all project databases, assets metadata, and audit logs as a compressed tar.gz archive.</p>
+                <button onclick="window.location.href='/api/backup'">Download Project Backup</button>
+            </div>
+
             <div class="card" id="preview-card" style="display:none;">
                 <h3>Rendered Output</h3>
                 <video id="output-video" controls width="100%"></video>

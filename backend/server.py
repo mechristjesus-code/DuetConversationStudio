@@ -1,6 +1,7 @@
 import os
 import json
 import uuid
+import tarfile
 import email.message
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
@@ -109,6 +110,18 @@ class DuetStudioHandler(SimpleHTTPRequestHandler):
                 cursor.execute("SELECT * FROM generations ORDER BY created_at DESC")
                 rows = [dict(row) for row in cursor.fetchall()]
                 self.send_json(rows)
+            elif path == "/api/backup":
+                conn.close() # close db before backup
+                backup_filename = f"duet_backup_{uuid.uuid4().hex[:8]}.tar.gz"
+                backup_path = BASE_DIR / backup_filename
+                with tarfile.open(backup_path, "w:gz") as tar:
+                    if DATA_DIR.exists():
+                        tar.add(DATA_DIR, arcname="data")
+                    audit_log = BASE_DIR / "audit.log"
+                    if audit_log.exists():
+                        tar.add(audit_log, arcname="audit.log")
+                self.send_file(backup_path)
+                return
             else:
                 self.send_error(404, "API endpoint not found")
         finally:
