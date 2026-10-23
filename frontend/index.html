@@ -7,110 +7,142 @@
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-    <header>
-        <h1>Duet Conversation Studio</h1>
-        <nav>
-            <button class="tab-btn active" onclick="switchTab('studio')">Studio</button>
-            <button class="tab-btn" onclick="switchTab('map')">Conversation Map</button>
-            <button class="tab-btn" onclick="switchTab('lab')">Understanding Lab</button>
-        </nav>
-    </header>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <h1>Duet Studio</h1>
+                <span class="version">v0.1.0</span>
+            </div>
+            <nav class="nav-menu">
+                <button class="tab-btn active" onclick="switchTab('studio')">
+                    <span class="icon">🎬</span> Studio & Compositing
+                </button>
+                <button class="tab-btn" onclick="switchTab('map')">
+                    <span class="icon">🗺️</span> Conversation Map
+                </button>
+                <button class="tab-btn" onclick="switchTab('lab')">
+                    <span class="icon">🔬</span> Understanding Lab
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <p>Offline-First FFmpeg Studio</p>
+                <button class="backup-sidebar-btn" onclick="window.location.href='/api/backup'">💾 Download Backup</button>
+            </div>
+        </aside>
 
-    <main>
-        <!-- Studio Tab -->
-        <section id="tab-studio" class="tab-content active">
-            <h2>Media & Duet Compositing</h2>
-            <div class="card">
-                <h3>Upload Video Asset</h3>
-                <form id="upload-form" onsubmit="uploadVideo(event)">
-                    <input type="file" id="video-file" accept="video/*" required>
-                    <button type="submit">Upload Asset</button>
-                </form>
-            </div>
+        <!-- Main Content Workspace -->
+        <main class="content">
+            <div id="status-banner" class="status-banner" style="display: none;"></div>
 
-            <div class="card">
-                <h3>Create Duet / Generation</h3>
-                <div id="status-banner" style="margin-bottom: 1rem; padding: 0.75rem; background: #2c2c2c; border-left: 4px solid #6200ee; border-radius: 4px; display: none; font-size: 0.9rem;"></div>
-                <div class="form-group">
-                    <label>Video A (Source / Question)</label>
-                    <select id="asset1-select"></select>
+            <!-- Studio Tab -->
+            <section id="tab-studio" class="tab-content active">
+                <div class="section-header">
+                    <h2>Media & Duet Compositing</h2>
+                    <p class="guidance-text">Upload source videos, configure side-by-side or stacked layouts, render duets via FFmpeg, and export project snapshots.</p>
                 </div>
-                <div class="form-group">
-                    <label>Video B (Response / Counter)</label>
-                    <select id="asset2-select"></select>
-                </div>
-                <div class="form-group">
-                    <label>Layout</label>
-                    <select id="layout-select">
-                        <option value="side-by-side">Side-by-Side (H-Stack)</option>
-                        <option value="stacked">Stacked (V-Stack)</option>
-                    </select>
-                </div>
-                <button onclick="renderDuet()">Render Duet</button>
-            </div>
 
-            <div class="card">
-                <h3>Assets Library</h3>
-                <div id="assets-list">Loading assets...</div>
-            </div>
+                <div class="workspace-grid">
+                    <div class="card">
+                        <h3>Upload Video Asset</h3>
+                        <form id="upload-form" onsubmit="uploadVideo(event)">
+                            <div class="form-group">
+                                <input type="file" id="video-file" accept="video/*" required>
+                            </div>
+                            <button type="submit">Upload & Inspect</button>
+                        </form>
+                    </div>
 
-            <div class="card">
-                <h3>System Snapshot & Backup</h3>
-                <p>Export all project databases, assets metadata, and audit logs as a compressed tar.gz archive.</p>
-                <button onclick="window.location.href='/api/backup'">Download Project Backup</button>
-            </div>
+                    <div class="card">
+                        <h3>Create Duet Generation</h3>
+                        <div class="form-group">
+                            <label>Video A (Source / Question)</label>
+                            <select id="asset1-select"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Video B (Response / Counter)</label>
+                            <select id="asset2-select"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Layout Structure</label>
+                            <select id="layout-select">
+                                <option value="side-by-side">Side-by-Side (H-Stack)</option>
+                                <option value="stacked">Stacked (V-Stack)</option>
+                            </select>
+                        </div>
+                        <button onclick="renderDuet()">Render Duet via FFmpeg</button>
+                    </div>
+                </div>
 
-            <div class="card" id="preview-card" style="display:none;">
-                <h3>Rendered Output</h3>
-                <video id="output-video" controls width="100%"></video>
-                <p id="output-info"></p>
-                <a id="download-btn" class="btn" style="display:inline-block; margin-top:10px; padding:0.5rem 1rem; background:#6200ee; color:white; text-decoration:none; border-radius:4px;" download>Download MP4</a>
-            </div>
-        </section>
+                <div class="card full-width">
+                    <h3>Assets Library</h3>
+                    <div id="assets-list">Loading assets...</div>
+                </div>
 
-        <!-- Conversation Map Tab -->
-        <section id="tab-map" class="tab-content">
-            <h2>Conversation Lineage & Generations</h2>
-            <div class="card">
-                <button onclick="loadGenerations()">Refresh Graph</button>
-                <div id="generations-list">Loading generations...</div>
-            </div>
-        </section>
+                <div class="card full-width" id="preview-card" style="display:none;">
+                    <h3>Rendered Output Preview</h3>
+                    <video id="output-video" controls width="100%"></video>
+                    <p id="output-info" class="meta-info"></p>
+                    <a id="download-btn" class="btn" download>Download Rendered MP4</a>
+                </div>
+            </section>
 
-        <!-- Understanding Lab Tab -->
-        <section id="tab-lab" class="tab-content">
-            <h2>Conversation Understanding Lab</h2>
-            <div class="card">
-                <h3>Add Conversation Turn</h3>
-                <div class="form-group">
-                    <label>Segment ID</label>
-                    <input type="text" id="turn-segment" placeholder="seg_123">
+            <!-- Conversation Map Tab -->
+            <section id="tab-map" class="tab-content">
+                <div class="section-header">
+                    <h2>Conversation Lineage & Generations</h2>
+                    <p class="guidance-text">Explore cryptographic lineage trees, parent-child relationships, and generational render recipes.</p>
                 </div>
-                <div class="form-group">
-                    <label>Transcript</label>
-                    <textarea id="turn-transcript" placeholder="Speaker statement..."></textarea>
+                <div class="card full-width">
+                    <div class="toolbar">
+                        <button onclick="loadGenerations()">Refresh Lineage Graph</button>
+                    </div>
+                    <div id="generations-list">Loading generations...</div>
                 </div>
-                <div class="form-group">
-                    <label>Replies To (Turn ID)</label>
-                    <input type="text" id="turn-reply" placeholder="turn_456">
+            </section>
+
+            <!-- Understanding Lab Tab -->
+            <section id="tab-lab" class="tab-content">
+                <div class="section-header">
+                    <h2>Conversation Understanding Lab</h2>
+                    <p class="guidance-text">Tag transcripts, link replies, and analyze discursive relationships (challenges, clarifications, responses) across dialogue segments.</p>
                 </div>
-                <div class="form-group">
-                    <label>Relationship Type</label>
-                    <select id="turn-relation">
-                        <option value="response">Response</option>
-                        <option value="challenge">Challenge / Disagree</option>
-                        <option value="clarification">Clarification</option>
-                        <option value="unresolved_question">Unresolved Question</option>
-                    </select>
+                
+                <div class="workspace-grid">
+                    <div class="card">
+                        <h3>Add Conversation Turn</h3>
+                        <div class="form-group">
+                            <label>Segment ID</label>
+                            <input type="text" id="turn-segment" placeholder="seg_123">
+                        </div>
+                        <div class="form-group">
+                            <label>Transcript Statement</label>
+                            <textarea id="turn-transcript" placeholder="Speaker statement..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Replies To (Turn ID)</label>
+                            <input type="text" id="turn-reply" placeholder="turn_456">
+                        </div>
+                        <div class="form-group">
+                            <label>Relationship Type</label>
+                            <select id="turn-relation">
+                                <option value="response">Response</option>
+                                <option value="challenge">Challenge / Disagree</option>
+                                <option value="clarification">Clarification</option>
+                                <option value="unresolved_question">Unresolved Question</option>
+                            </select>
+                        </div>
+                        <button onclick="saveTurn()">Save Conversation Turn</button>
+                    </div>
+
+                    <div class="card">
+                        <h3>Recorded Conversation Turns</h3>
+                        <div id="turns-list">Loading turns...</div>
+                    </div>
                 </div>
-                <button onclick="saveTurn()">Save Turn</button>
-            </div>
-            <div class="card">
-                <h3>Recorded Conversation Turns</h3>
-                <div id="turns-list">Loading turns...</div>
-            </div>
-        </section>
-    </main>
+            </section>
+        </main>
+    </div>
 
     <script src="/app.js"></script>
 </body>
